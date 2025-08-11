@@ -6,7 +6,7 @@ import cv2
 
 
 class GUI:
-    def __init__(self):
+    def __init__(self, camera):
         self.root = Tk()
         self.root.title("IR Insect Detector")
         self.mainframe = ttk.Frame(self.root, padding="3 3 12 12")
@@ -16,6 +16,8 @@ class GUI:
 
         self.img_label = Label(self.mainframe)
         self.img_label.grid(row=0, column=0)
+
+        self.camera = camera
 
         self.palette, self.palette_name = PALETTES[0]
 
@@ -91,9 +93,19 @@ class GUI:
         self.pwm_duty_scale.state(["disabled"])
         self.pwm_duty_scale.pack(pady=5)
 
+    def update_image(self):
+        frame = self.camera.get_frame()
+        im_pil = Image.fromarray(frame)
+        imgtk = ImageTk.PhotoImage(image=im_pil)
+        self.img_label.imgtk = imgtk
+        self.img_label["image"] = imgtk
+
+        self.root.after(100, self.update_image)
+
     def close(self):
         self.root.destroy()
 
     def run(self):
         self.root.protocol("WM_DELETE_WINDOW", self.close)
+        self.update_image()
         self.root.mainloop()
