@@ -1,12 +1,11 @@
 from tkinter import *
-from tkinter import ttk, filedialog
+from tkinter import ttk
 from PIL import Image, ImageTk
 from utils.colors import PALETTES
-import cv2
 
 
 class GUI:
-    def __init__(self, camera):
+    def __init__(self, camera, img_processor):
         self.root = Tk()
         self.root.title("IR Insect Detector")
         self.mainframe = ttk.Frame(self.root, padding="3 3 12 12")
@@ -20,6 +19,7 @@ class GUI:
         self.img_label.grid(row=0, column=0)
 
         self.camera = camera
+        self.img_processor = img_processor
 
         self.palette, self.palette_name = PALETTES[0]
 
@@ -46,7 +46,8 @@ class GUI:
     def on_palette_selected(self):
         index = self.palette_combo.current()
         self.palette, self.palette_name = PALETTES[index]
-        # TODO update the image
+        self.img_processor.set_palette(self.palette)
+        self.update_image()
 
     def setup_action_buttons(self):
         ttk.Button(
@@ -110,6 +111,7 @@ class GUI:
 
     def update_image(self):
         frame = self.camera.get_frame()
+        frame = self.img_processor.process(frame)
         im_pil = Image.fromarray(frame)
         imgtk = ImageTk.PhotoImage(image=im_pil)
         self.img_label.imgtk = imgtk
