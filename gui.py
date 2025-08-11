@@ -1,11 +1,19 @@
 from tkinter import *
 from tkinter import ttk
 from PIL import Image, ImageTk
+from camera import CameraController
+from img_processor import ImageProcessor
+from pwm import PWMController
 from utils.colors import PALETTES
 
 
 class GUI:
-    def __init__(self, camera, img_processor):
+    def __init__(
+        self,
+        camera: CameraController,
+        img_processor: ImageProcessor,
+        pwm_controller: PWMController,
+    ):
         self.root = Tk()
         self.root.title("IR Insect Detector")
         self.mainframe = ttk.Frame(self.root, padding="3 3 12 12")
@@ -20,6 +28,7 @@ class GUI:
 
         self.camera = camera
         self.img_processor = img_processor
+        self.pwm_controller = pwm_controller
 
         self.palette, self.palette_name = PALETTES[0]
 
@@ -65,7 +74,7 @@ class GUI:
         else:
             self.record_button["text"] = "🎥 Record (R)"
 
-    def key_handler(self, event):
+    def key_handler(self, event: Event):
         key = event.char.lower()
         match key:
             case "r":
@@ -76,17 +85,17 @@ class GUI:
     def setup_pwm_controls(self):
         self.pwm_label = ttk.Label(self.settings_frame, text="PWM : Inactive (GPIO 18)")
         self.pwm_label.pack(pady=5)
-        ttk.Button(self.settings_frame, text="Toggle PWM", command=placeholder).pack(
-            pady=5
-        )
+        ttk.Button(
+            self.settings_frame, text="Toggle PWM", command=self.toggle_pwm
+        ).pack(pady=5)
 
         # PWM Mode button
-        self.pwm_mode = StringVar(value="auto")
+        self.pwm_controller.mode = StringVar(value="auto")
         ttk.Checkbutton(
             self.settings_frame,
             text="PWM Auto mode",
-            command=placeholder,
-            variable=self.pwm_mode,
+            command=self.toggle_pwm_mode,
+            variable=self.pwm_controller.mode,
             onvalue="auto",
             offvalue="manual",
         ).pack(pady=5)
@@ -94,20 +103,59 @@ class GUI:
         # Frequency
         ttk.Label(self.settings_frame, text="Frequency (Hz)").pack(pady=5)
         self.pwm_freq_scale = ttk.Scale(
-            self.settings_frame, from_=500, to=1500, orient=HORIZONTAL
+            self.settings_frame,
+            from_=self.pwm_controller.freq_min,
+            to=self.pwm_controller.freq_max,
+            orient=HORIZONTAL,
+            command=self.on_pwm_freq_change,
         )
-        self.pwm_freq_scale.set(1000)
+        self.pwm_freq_scale.set(self.pwm_controller.base_freq)
         self.pwm_freq_scale.state(["disabled"])
         self.pwm_freq_scale.pack(pady=5)
 
         # Duty cycle
         ttk.Label(self.settings_frame, text="Duty Cycle (%)").pack(pady=5)
         self.pwm_duty_scale = ttk.Scale(
-            self.settings_frame, from_=0, to=100, orient=HORIZONTAL
+            self.settings_frame,
+            from_=self.pwm_controller.duty_min,
+            to=self.pwm_controller.duty_max,
+            orient=HORIZONTAL,
+            command=self.on_pwm_duty_change,
         )
-        self.pwm_duty_scale.set(50)
+        self.pwm_duty_scale.set(self.pwm_controller.base_duty)
         self.pwm_duty_scale.state(["disabled"])
         self.pwm_duty_scale.pack(pady=5)
+
+    def toggle_pwm(self):
+        self.pwm_controller.toggle()
+        self.update_pwm_text()
+
+    def update_pwm_text(self):
+        if self.pwm_controller.enabled:
+            self.pwm_label["text"] = (
+                f"PWM : {self.pwm_controller.freq} Hz {self.pwm_controller.duty} %"
+            )
+        else:
+            self.pwm_label["text"] = "PWM : Inactive (GPIO 18)"
+
+    def toggle_pwm_mode(self):
+        if self.pwm_controller.mode == "auto":
+            mode = "disabled"
+            self.pwm_duty_scale.set(self.pwm_controller.base_duty)
+            self.pwm_freq_scale(self.pwm_controller.base_freq)
+        else:
+            mode = "enabled"
+
+        self.pwm_freq_scale.state([mode])
+        self.pwm_duty_scale.state([mode])
+
+    def on_pwm_freq_change(self, value):
+        self.pwm_controller.update_freq(value)
+        self.update_pwm_text()
+
+    def on_pwm_duty_change(self, value):
+        self.pwm_controller.update_duty(value)
+        self.update_pwm_text()
 
     def update_image(self):
         frame = self.camera.get_frame()
@@ -120,6 +168,7 @@ class GUI:
         self.root.after(100, self.update_image)
 
     def close(self):
+        self.pwm_controller.stop()
         self.camera.stop()
         self.root.destroy()
 
