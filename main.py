@@ -1,8 +1,14 @@
+from camera import CameraController
 from gui import GUI
+from img_processor import ImageProcessor
+
 
 def main():
-    app = GUI()
+    camera = CameraController()
+    img_processor = ImageProcessor()
+    app = GUI(camera, img_processor)
     app.run()
 
-if __name__ == "__main__" :
+
+if __name__ == "__main__":
     main()
