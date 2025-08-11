@@ -11,8 +11,6 @@ class ImageProcessor:
         self.palette = palette
 
     def process(self, frame):
-        if frame.dtype != "uint8":
-            frame = frame.astype("uint8")
         gray = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
         if self.equalize:
             gray = cv2.equalizeHist(gray)
