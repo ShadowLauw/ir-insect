@@ -44,7 +44,7 @@ cd ir-insect
 uv sync
 source .venv/bin/activate
 sudo apt update
-sudo apt install build-essential python3-dev libcap-dev python3-picamera2
+sudo apt install build-essential python3-dev libcap-dev python3-picamera2 fonts-noto-color-emoji
 ```
 
 > **Note:** Picamera2 relies on the system’s libcamera stack.  

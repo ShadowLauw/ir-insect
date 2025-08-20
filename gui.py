@@ -5,6 +5,7 @@ from camera import CameraController
 from img_processor import ImageProcessor
 from pwm import PWMController
 from utils.colors import PALETTES
+from utils.fonts import init_emoji_style
 
 
 class GUI:
@@ -20,6 +21,7 @@ class GUI:
         self.mainframe.grid(column=0, row=0, sticky=(N, W, E, S))
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(0, weight=1)
+        self.emoji_styles = init_emoji_style(self.root)
 
         self.root.bind("<Key>", self.key_handler)
 
@@ -43,7 +45,11 @@ class GUI:
         self.setup_pwm_controls()
 
     def setup_palette_selector(self):
-        ttk.Label(self.settings_frame, text="🎨 Select palette").pack(pady=5)
+        ttk.Label(
+            self.settings_frame,
+            text="🎨 Select palette",
+            style=self.emoji_styles["label"],
+        ).pack(pady=5)
         palette_names = [name for _, name in PALETTES]
         self.palette_combo = ttk.Combobox(
             self.settings_frame, values=palette_names, state="readonly"
@@ -59,10 +65,16 @@ class GUI:
 
     def setup_action_buttons(self):
         ttk.Button(
-            self.settings_frame, text="📸 Picture (P)", command=self.camera.take_picture
+            self.settings_frame,
+            text="📸 Picture (P)",
+            command=self.camera.take_picture,
+            style=self.emoji_styles["button"],
         ).pack(pady=5)
         self.record_button = ttk.Button(
-            self.settings_frame, text="🎥 Record (R)", command=self.toggle_recording
+            self.settings_frame,
+            text="🎥 Record (R)",
+            command=self.toggle_recording,
+            style=self.emoji_styles["button"],
         )
         self.record_button.pack(pady=5)
 
