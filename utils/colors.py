@@ -1,7 +1,8 @@
 import cv2
 
 PALETTES = [
-    (None, "GRAYSCALE"),
+    (None, "NONE"),
+    ("Grayscale", "GRAYSCALE"),
     (cv2.COLORMAP_JET, "JET"),
     (cv2.COLORMAP_INFERNO, "INFERNO"),
     (cv2.COLORMAP_MAGMA, "MAGMA"),
