@@ -56,7 +56,6 @@ class GUI:
         index = self.palette_combo.current()
         self.palette, self.palette_name = PALETTES[index]
         self.img_processor.set_palette(self.palette)
-        self.update_image()
 
     def setup_action_buttons(self):
         ttk.Button(
