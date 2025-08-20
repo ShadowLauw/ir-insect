@@ -1,5 +1,4 @@
 import RPi.GPIO as GPIO
-import time
 
 
 class PWMController:
@@ -32,15 +31,18 @@ class PWMController:
         GPIO.setup(self.pin, GPIO.OUT)
         self.pwm = GPIO.PWM(self.pin, self.freq)
         self.enabled = False
-        self.mode = None
+        self.mode = "auto"
 
     def toggle(self):
         if self.enabled:
             self.pwm.stop()
             self.enabled = False
         else:
-            self.pwm.start(50)
+            self.pwm.start()
             self.enabled = True
+
+    def toggle_mode(self):
+        self.mode = "manual" if self.mode == "auto" else "auto"
 
     def update_freq(self, freq):
         self.freq = round(float(freq))

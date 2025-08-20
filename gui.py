@@ -52,7 +52,7 @@ class GUI:
         self.palette_combo.pack(pady=5)
         self.palette_combo.bind("<<ComboboxSelected>>", self.on_palette_selected)
 
-    def on_palette_selected(self):
+    def on_palette_selected(self, event):
         index = self.palette_combo.current()
         self.palette, self.palette_name = PALETTES[index]
         self.img_processor.set_palette(self.palette)
@@ -70,7 +70,7 @@ class GUI:
     def toggle_recording(self):
         started = self.camera.toggle_recording()
         if started:
-            self.record_button["text"] = "🛑 Stop Recording"
+            self.record_button["text"] = "🛑 Stop Recording (R)"
         else:
             self.record_button["text"] = "🎥 Record (R)"
 
@@ -90,14 +90,12 @@ class GUI:
         ).pack(pady=5)
 
         # PWM Mode button
-        self.pwm_controller.mode = StringVar(value="auto")
+        self.pwm_auto_var = BooleanVar(value=self.pwm_controller.mode == "auto")
         ttk.Checkbutton(
             self.settings_frame,
             text="PWM Auto mode",
             command=self.toggle_pwm_mode,
-            variable=self.pwm_controller.mode,
-            onvalue="auto",
-            offvalue="manual",
+            variable=self.pwm_auto_var,
         ).pack(pady=5)
 
         # Frequency
@@ -136,18 +134,18 @@ class GUI:
                 f"PWM : {self.pwm_controller.freq} Hz {self.pwm_controller.duty} %"
             )
         else:
-            self.pwm_label["text"] = "PWM : Inactive (GPIO 18)"
+            self.pwm_label["text"] = f"PWM : Inactive (GPIO {self.pwm_controller.pin})"
 
     def toggle_pwm_mode(self):
-        if self.pwm_controller.mode == "auto":
-            mode = "disabled"
-            self.pwm_duty_scale.set(self.pwm_controller.base_duty)
-            self.pwm_freq_scale(self.pwm_controller.base_freq)
-        else:
-            mode = "enabled"
+        self.pwm_controller.toggle_mode()
+        is_auto = self.pwm_auto_var.get()
 
-        self.pwm_freq_scale.state([mode])
-        self.pwm_duty_scale.state([mode])
+        if is_auto:
+            self.pwm_duty_scale.set(self.pwm_controller.base_duty)
+            self.pwm_freq_scale.set(self.pwm_controller.base_freq)
+
+        for widget in (self.pwm_freq_scale, self.pwm_duty_scale):
+            widget.state(["disabled"] if is_auto else ["!disabled"])
 
     def on_pwm_freq_change(self, value):
         self.pwm_controller.update_freq(value)
