@@ -5,6 +5,7 @@ from camera import CameraController
 from img_processor import ImageProcessor
 from pwm import PWMController
 from utils.colors import PALETTES
+from utils.fonts import init_emoji_style
 
 
 class GUI:
@@ -20,6 +21,7 @@ class GUI:
         self.mainframe.grid(column=0, row=0, sticky=(N, W, E, S))
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(0, weight=1)
+        self.emoji_styles = init_emoji_style(self.root)
 
         self.root.bind("<Key>", self.key_handler)
 
@@ -43,7 +45,11 @@ class GUI:
         self.setup_pwm_controls()
 
     def setup_palette_selector(self):
-        ttk.Label(self.settings_frame, text="🎨 Select palette").pack(pady=5)
+        ttk.Label(
+            self.settings_frame,
+            text="🎨 Select palette",
+            style=self.emoji_styles["label"],
+        ).pack(pady=5)
         palette_names = [name for _, name in PALETTES]
         self.palette_combo = ttk.Combobox(
             self.settings_frame, values=palette_names, state="readonly"
@@ -52,25 +58,30 @@ class GUI:
         self.palette_combo.pack(pady=5)
         self.palette_combo.bind("<<ComboboxSelected>>", self.on_palette_selected)
 
-    def on_palette_selected(self):
+    def on_palette_selected(self, event):
         index = self.palette_combo.current()
         self.palette, self.palette_name = PALETTES[index]
         self.img_processor.set_palette(self.palette)
-        self.update_image()
 
     def setup_action_buttons(self):
         ttk.Button(
-            self.settings_frame, text="📸 Picture (P)", command=self.camera.take_picture
+            self.settings_frame,
+            text="📸 Picture (P)",
+            command=self.camera.take_picture,
+            style=self.emoji_styles["button"],
         ).pack(pady=5)
         self.record_button = ttk.Button(
-            self.settings_frame, text="🎥 Record (R)", command=self.toggle_recording
+            self.settings_frame,
+            text="🎥 Record (R)",
+            command=self.toggle_recording,
+            style=self.emoji_styles["button"],
         )
         self.record_button.pack(pady=5)
 
     def toggle_recording(self):
         started = self.camera.toggle_recording()
         if started:
-            self.record_button["text"] = "🛑 Stop Recording"
+            self.record_button["text"] = "🛑 Stop Recording (R)"
         else:
             self.record_button["text"] = "🎥 Record (R)"
 
@@ -90,14 +101,12 @@ class GUI:
         ).pack(pady=5)
 
         # PWM Mode button
-        self.pwm_controller.mode = StringVar(value="auto")
+        self.pwm_auto_var = BooleanVar(value=self.pwm_controller.mode == "auto")
         ttk.Checkbutton(
             self.settings_frame,
             text="PWM Auto mode",
             command=self.toggle_pwm_mode,
-            variable=self.pwm_controller.mode,
-            onvalue="auto",
-            offvalue="manual",
+            variable=self.pwm_auto_var,
         ).pack(pady=5)
 
         # Frequency
@@ -136,18 +145,18 @@ class GUI:
                 f"PWM : {self.pwm_controller.freq} Hz {self.pwm_controller.duty} %"
             )
         else:
-            self.pwm_label["text"] = "PWM : Inactive (GPIO 18)"
+            self.pwm_label["text"] = f"PWM : Inactive (GPIO {self.pwm_controller.pin})"
 
     def toggle_pwm_mode(self):
-        if self.pwm_controller.mode == "auto":
-            mode = "disabled"
-            self.pwm_duty_scale.set(self.pwm_controller.base_duty)
-            self.pwm_freq_scale(self.pwm_controller.base_freq)
-        else:
-            mode = "enabled"
+        self.pwm_controller.toggle_mode()
+        is_auto = self.pwm_auto_var.get()
 
-        self.pwm_freq_scale.state([mode])
-        self.pwm_duty_scale.state([mode])
+        if is_auto:
+            self.pwm_duty_scale.set(self.pwm_controller.base_duty)
+            self.pwm_freq_scale.set(self.pwm_controller.base_freq)
+
+        for widget in (self.pwm_freq_scale, self.pwm_duty_scale):
+            widget.state(["disabled"] if is_auto else ["!disabled"])
 
     def on_pwm_freq_change(self, value):
         self.pwm_controller.update_freq(value)

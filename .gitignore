@@ -1,1 +1,4 @@
 .vscode
+*.h264
+.venv
+__pycache__/
