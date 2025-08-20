@@ -38,7 +38,7 @@ class PWMController:
             self.pwm.stop()
             self.enabled = False
         else:
-            self.pwm.start()
+            self.pwm.start(self.duty)
             self.enabled = True
 
     def toggle_mode(self):
