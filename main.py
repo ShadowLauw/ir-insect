@@ -5,6 +5,7 @@ from pwm import PWMController
 
 
 def main():
+    """Initialize components and start the IR insect detector GUI"""
     camera = CameraController()
     img_processor = ImageProcessor()
     pwm_controller = PWMController()
