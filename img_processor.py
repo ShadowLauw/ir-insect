@@ -3,15 +3,28 @@ import numpy as np
 
 
 class ImageProcessor:
+    """
+    Processes camera frames for detecting reflective insects
+
+    Applies a sequence of image processing steps to each frame:
+    - Resize to a standard resolution
+    - Convert to grayscale
+    - Optional histogram equalization to improve contrast
+    - Gaussian blur to reduce noise
+    - Optional color palette mapping for visualization
+    """
     def __init__(self, blur_ksize=3, equalize=True, palette=None):
+        """Initialize ImageProcessor with blur size, histogram equalization, and optional color palette"""
         self.blur_ksize = blur_ksize
         self.equalize = equalize
         self.palette = palette
 
     def set_palette(self, palette):
+        """Set color palette for output"""
         self.palette = palette
 
     def process(self, frame):
+        """Process a frame: resize, grayscale, blur, apply palette, and highlight insects"""
         output = cv2.resize(frame, (640, 480), interpolation=cv2.INTER_LANCZOS4)
 
         gray = cv2.cvtColor(output, cv2.COLOR_RGB2GRAY)
@@ -27,7 +40,7 @@ class ImageProcessor:
         else:
             output_colormap = output.copy()
 
-        # --- Highlight insects ---
+         # Highlight insects based on intensity and circularity
         _, thresh = cv2.threshold(gray, 254, 255, cv2.THRESH_BINARY)
         contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 

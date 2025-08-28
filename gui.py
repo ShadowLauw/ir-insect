@@ -9,12 +9,21 @@ from utils.fonts import init_emoji_style
 
 
 class GUI:
+    """
+    GUI for IR Insect Detector
+
+    Integrates:
+    - Camera preview and capture
+    - Image processing (palette selection)
+    - PWM control (frequency, duty cycle, auto/manual mode)
+    """
     def __init__(
         self,
         camera: CameraController,
         img_processor: ImageProcessor,
         pwm_controller: PWMController,
     ):
+        """Initialize the GUI, set up main window, bind keys, and configure camera, processor, and PWM"""
         self.root = Tk()
         self.root.title("IR Insect Detector")
         self.mainframe = ttk.Frame(self.root, padding="3 3 12 12")
@@ -23,8 +32,10 @@ class GUI:
         self.root.rowconfigure(0, weight=1)
         self.emoji_styles = init_emoji_style(self.root)
 
+        # Bind keyboard events (e.g., 'p' for picture, 'r' for record)
         self.root.bind("<Key>", self.key_handler)
 
+        # Label to display camera frames
         self.img_label = Label(self.mainframe)
         self.img_label.grid(row=0, column=0)
 
@@ -34,9 +45,11 @@ class GUI:
 
         self.palette, self.palette_name = PALETTES[0]
 
+        # Setup the side panel with palette, buttons, and PWM controls
         self.setup_settings_panel()
 
     def setup_settings_panel(self):
+        """Setup side panel with palette selector, action buttons, and PWM controls"""
         self.settings_frame = ttk.Frame(self.mainframe)
         self.settings_frame.grid(row=0, column=1, sticky=(N, S), padx=10)
 
@@ -45,6 +58,7 @@ class GUI:
         self.setup_pwm_controls()
 
     def setup_palette_selector(self):
+        """Create palette selection dropdown"""
         ttk.Label(
             self.settings_frame,
             text="🎨 Select palette",
@@ -59,11 +73,14 @@ class GUI:
         self.palette_combo.bind("<<ComboboxSelected>>", self.on_palette_selected)
 
     def on_palette_selected(self, event):
+        """Update image processor palette when selection changes"""
         index = self.palette_combo.current()
         self.palette, self.palette_name = PALETTES[index]
         self.img_processor.set_palette(self.palette)
 
     def setup_action_buttons(self):
+        """Create picture and recording buttons"""
+        # Buttons for taking pictures and toggling recording
         ttk.Button(
             self.settings_frame,
             text="📸 Picture (P)",
@@ -79,6 +96,7 @@ class GUI:
         self.record_button.pack(pady=5)
 
     def toggle_recording(self):
+        """Update button text according to recording state"""
         started = self.camera.toggle_recording()
         if started:
             self.record_button["text"] = "🛑 Stop Recording (R)"
@@ -86,6 +104,7 @@ class GUI:
             self.record_button["text"] = "🎥 Record (R)"
 
     def key_handler(self, event: Event):
+        """Keyboard shortcuts: 'p' for picture, 'r' for record"""
         key = event.char.lower()
         match key:
             case "r":
@@ -94,6 +113,7 @@ class GUI:
                 self.camera.take_picture()
 
     def setup_pwm_controls(self):
+        # PWM status label
         self.pwm_label = ttk.Label(self.settings_frame, text="PWM : Inactive (GPIO 18)")
         self.pwm_label.pack(pady=5)
         ttk.Button(
@@ -109,7 +129,7 @@ class GUI:
             variable=self.pwm_auto_var,
         ).pack(pady=5)
 
-        # Frequency
+        # Frequency slider
         ttk.Label(self.settings_frame, text="Frequency (Hz)").pack(pady=5)
         self.pwm_freq_scale = ttk.Scale(
             self.settings_frame,
@@ -122,7 +142,7 @@ class GUI:
         self.pwm_freq_scale.state(["disabled"])
         self.pwm_freq_scale.pack(pady=5)
 
-        # Duty cycle
+        # Duty cycle slider
         ttk.Label(self.settings_frame, text="Duty Cycle (%)").pack(pady=5)
         self.pwm_duty_scale = ttk.Scale(
             self.settings_frame,
@@ -136,10 +156,12 @@ class GUI:
         self.pwm_duty_scale.pack(pady=5)
 
     def toggle_pwm(self):
+        """Toggle PWM on/off and update label"""
         self.pwm_controller.toggle()
         self.update_pwm_text()
 
     def update_pwm_text(self):
+        """Update PWM label with current frequency/duty or inactive state"""
         if self.pwm_controller.enabled:
             self.pwm_label["text"] = (
                 f"PWM : {self.pwm_controller.freq} Hz {self.pwm_controller.duty} %"
@@ -148,6 +170,7 @@ class GUI:
             self.pwm_label["text"] = f"PWM : Inactive (GPIO {self.pwm_controller.pin})"
 
     def toggle_pwm_mode(self):
+        """Switch PWM between auto and manual mode; enable/disable sliders"""
         self.pwm_controller.toggle_mode()
         is_auto = self.pwm_auto_var.get()
 
@@ -159,14 +182,17 @@ class GUI:
             widget.state(["disabled"] if is_auto else ["!disabled"])
 
     def on_pwm_freq_change(self, value):
+        """Update PWM frequency from slider"""
         self.pwm_controller.update_freq(value)
         self.update_pwm_text()
 
     def on_pwm_duty_change(self, value):
+        """Update PWM duty cycle from slider"""
         self.pwm_controller.update_duty(value)
         self.update_pwm_text()
 
     def update_image(self):
+        """Capture frame, process it, and display in the GUI. Repeats every 100ms"""
         frame = self.camera.get_frame()
         frame = self.img_processor.process(frame)
         im_pil = Image.fromarray(frame)
@@ -177,11 +203,13 @@ class GUI:
         self.root.after(100, self.update_image)
 
     def close(self):
+        """Stop PWM and camera, then destroy the GUI window (must be called on exit)"""
         self.pwm_controller.stop()
         self.camera.stop()
         self.root.destroy()
 
     def run(self):
+        """Start the Tkinter main loop"""
         self.root.protocol("WM_DELETE_WINDOW", self.close)
         self.update_image()
         self.root.mainloop()

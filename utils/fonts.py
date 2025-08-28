@@ -10,7 +10,7 @@ def init_emoji_style(root, font_family="Noto Color Emoji", font_size=12):
     style.configure("Emoji.TLabel", font=emoji_font)
     style.configure("Emoji.TCheckbutton", font=emoji_font)
 
-    # Retourne un dict pour l’utiliser facilement
+    # Return a dict to use easily 
     return {
         "button": "Emoji.TButton",
         "label": "Emoji.TLabel",
